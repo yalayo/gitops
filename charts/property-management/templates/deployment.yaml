@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+      annotations:
+        # restart pods when Terraform writes a new secret version (env from a Secret isn't reloaded)
+        secrets/version: {{ .Values.secrets.version | quote }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      containers:
+        - name: app
+          image: "{{ required "image.repository is required" .Values.image.repository }}:{{ required "image.tag is required" .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.ports.http }}
+            {{- if .Values.ports.metrics }}
+            - name: metrics
+              containerPort: {{ .Values.ports.metrics }}
+            {{- end }}
+            - name: extra
+              containerPort: {{ .Values.ports.extra }}
+          {{- if .Values.secrets.enabled }}
+          envFrom:
+            # k8s Secret created by External Secrets Operator from AWS Secrets Manager
+            - secretRef:
+                name: {{ .Release.Name }}-db
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          # Switch to httpGet once you know a health endpoint (e.g. /health)
+          # Startup: give the JVM up to failureThreshold × periodSeconds to open the port.
+          # Liveness/readiness only start once this has succeeded.
+          startupProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: {{ .Values.probes.startup.periodSeconds }}
+            failureThreshold: {{ .Values.probes.startup.failureThreshold }}
+          readinessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+          livenessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}

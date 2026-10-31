@@ -1,0 +1,50 @@
+# Defaults; Terraform overrides image.repository / image.tag (and anything else it sets)
+replicaCount: 1
+
+image:
+  repository: ""            # e.g. 000000000000.dkr.ecr.us-east-1.localhost:4566/property-management
+  tag: ""                   # e.g. a1b2c3d
+  pullPolicy: Always
+
+ports:
+  http: 8080
+  metrics: null   # set a port if the app exposes metrics separately
+  extra: 9669
+
+# The image's JVM flags are -Xms3g -Xmx4g -> needs ~4.5 GiB with non-heap memory
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    memory: 1Gi
+
+probes:
+  startup:
+    periodSeconds: 10
+    failureThreshold: 30   # up to 30 × 10s = 5 min to start
+  readiness:
+    periodSeconds: 10
+  liveness:
+    periodSeconds: 20
+    failureThreshold: 3    # restart after ~1 min of not answering, once started
+
+ingress:
+  enabled: true
+  className: nginx
+  host: property-management.localhost
+
+# Service account the pod runs as; ESO also uses its token (IRSA) to read Secrets Manager
+serviceAccount:
+  name: property-management
+  roleArn: ""               # IAM role ARN, set by Terraform
+
+# Secrets come from AWS Secrets Manager via External Secrets Operator, synced into the
+# <release>-db Secret and injected as env vars (DB_HOST, DB_PORT, DB_NAME, DB_USER,
+# DB_PASSWORD, DATABASE_URL, plus anything in var.app_secrets)
+secrets:
+  enabled: true
+  region: us-east-1
+  awsSecretName: ""         # e.g. property-management/app, set by Terraform
+  version: ""               # Secrets Manager version id; changes force a re-sync + pod restart
+  refreshInterval: 1h
