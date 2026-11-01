@@ -29,6 +29,15 @@ singleBinary:
   # emptyDir and is lost when the Loki pod restarts. See README for enabling persistence.
   persistence:
     enabled: false
+  # Without persistence the chart mounts nothing at /var/loki, and the container's root filesystem
+  # is read-only -> give Loki a writable emptyDir for chunks, index, rules and compactor data
+  extraVolumes:
+    - name: loki-data
+      emptyDir:
+        sizeLimit: 2Gi
+  extraVolumeMounts:
+    - name: loki-data
+      mountPath: /var/loki
   resources:
     requests:
       cpu: 100m
