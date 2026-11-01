@@ -45,8 +45,8 @@ prometheus:
     ruleSelectorNilUsesHelmValues: false
     resources:
       requests:
-        cpu: 100m
-        memory: 256Mi
+        cpu: 250m
+        memory: 1Gi
       limits:
         memory: 1Gi
     # storageSpec omitted -> emptyDir (no default StorageClass in the Floci cluster)
