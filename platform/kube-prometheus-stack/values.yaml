@@ -31,8 +31,8 @@ grafana:
     failureThreshold: 10
   resources:
     requests:
-      cpu: 100m
-      memory: 256Mi
+      cpu: 250m
+      memory: 1Gi
     limits:
       memory: 1Gi                  # was 256Mi, too tight for Grafana 12
 
