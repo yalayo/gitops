@@ -2,7 +2,7 @@
 replicaCount: 1
 
 image:
-  repository: ""            # e.g. 000000000000.dkr.ecr.us-east-1.localhost:4566/property-management
+  repository: localhost:4566/000000000000/us-east-1/property-management
   tag: "c7de563" # jenkins-image-tag
   pullPolicy: Always
 
@@ -46,5 +46,5 @@ secrets:
   enabled: true
   region: us-east-1
   awsSecretName: property-management/app
-  version: ""               # Secrets Manager version id; changes force a re-sync + pod restart
+  version: "0.1.0"               # Secrets Manager version id; changes force a re-sync + pod restart
   refreshInterval: 1m
