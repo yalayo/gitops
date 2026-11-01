@@ -37,7 +37,7 @@ ingress:
 # Service account the pod runs as; ESO also uses its token (IRSA) to read Secrets Manager
 serviceAccount:
   name: property-management
-  roleArn: ""               # IAM role ARN, set by Terraform
+  roleArn: arn:aws:iam::000000000000:role/property-management-secrets
 
 # Secrets come from AWS Secrets Manager via External Secrets Operator, synced into the
 # <release>-db Secret and injected as env vars (DB_HOST, DB_PORT, DB_NAME, DB_USER,
@@ -45,6 +45,6 @@ serviceAccount:
 secrets:
   enabled: true
   region: us-east-1
-  awsSecretName: ""         # e.g. property-management/app, set by Terraform
+  awsSecretName: property-management/app
   version: ""               # Secrets Manager version id; changes force a re-sync + pod restart
-  refreshInterval: 1h
+  refreshInterval: 1m
