@@ -3,7 +3,7 @@ replicaCount: 1
 
 image:
   repository: ""
-  tag: "latest" # jenkins-image-tag
+  tag: "28a3881" # jenkins-image-tag
   pullPolicy: Always
 
 ports:
