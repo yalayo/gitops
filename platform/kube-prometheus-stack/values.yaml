@@ -34,7 +34,7 @@ grafana:
       cpu: 100m
       memory: 256Mi
     limits:
-      memory: 512Mi                  # was 256Mi, too tight for Grafana 12
+      memory: 1Gi                  # was 256Mi, too tight for Grafana 12
 
 prometheus:
   prometheusSpec:
