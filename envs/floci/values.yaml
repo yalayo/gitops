@@ -2,8 +2,8 @@
 replicaCount: 1
 
 image:
-  repository: ""            # e.g. 000000000000.dkr.ecr.us-east-1.localhost:4566/property-management
-  tag: ""                   # e.g. a1b2c3d
+  repository: ""
+  tag: "latest" # jenkins-image-tag
   pullPolicy: Always
 
 ports:
