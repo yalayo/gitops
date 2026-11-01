@@ -1,0 +1,64 @@
+# kube-prometheus-stack (chart prometheus-community/kube-prometheus-stack) for the local Floci cluster:
+# Prometheus + Grafana (+ kube-state-metrics, node-exporter). Grafana also queries Loki.
+
+grafana:
+  adminUser: admin
+  adminPassword: admin           # local only - use admin.existingSecret on a real cluster
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - grafana.localhost        # http://grafana.localhost:8080
+  persistence:
+    enabled: false               # no default StorageClass; dashboards come from the chart/ConfigMaps
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      uid: loki
+      access: proxy
+      url: http://loki.monitoring.svc.cluster.local:3100
+      jsonData:
+        maxLines: 1000
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+prometheus:
+  prometheusSpec:
+    retention: 2d
+    # Pick up ServiceMonitors/PodMonitors/rules from every namespace, not only ones labelled for this release
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        memory: 1Gi
+    # storageSpec omitted -> emptyDir (no default StorageClass in the Floci cluster)
+
+# Saves ~100 MiB; enable and configure receivers when you want notifications
+alertmanager:
+  enabled: false
+
+# k3s runs these inside the k3s server process, not as pods -> their scrape targets would be "down"
+kubeEtcd:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
+
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 16Mi
+    limits:
+      memory: 64Mi
