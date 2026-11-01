@@ -56,6 +56,12 @@ kubeProxy:
   enabled: false
 
 prometheus-node-exporter:
+  # node-exporter mounts the host's "/" with mountPropagation HostToContainer. Inside Floci's k3s
+  # container "/" is not a shared mount, so containerd refuses to start it
+  # ("path / is mounted on / but it is not a shared or slave mount").
+  # Without the root mount it still reports CPU, memory, network and load; filesystem metrics are lost.
+  hostRootFsMount:
+    enabled: false
   resources:
     requests:
       cpu: 10m
