@@ -19,12 +19,22 @@ grafana:
       url: http://loki.monitoring.svc.cluster.local:3100
       jsonData:
         maxLines: 1000
+  grafana.ini:
+    plugins:
+      preinstall_disabled: true      # don't download extra app plugins on every start
+  livenessProbe:
+    httpGet:
+      path: /api/health
+      port: 3000
+    initialDelaySeconds: 120         # time for the first start (migrations + dashboards)
+    timeoutSeconds: 30
+    failureThreshold: 10
   resources:
     requests:
-      cpu: 50m
-      memory: 128Mi
-    limits:
+      cpu: 100m
       memory: 256Mi
+    limits:
+      memory: 512Mi                  # was 256Mi, too tight for Grafana 12
 
 prometheus:
   prometheusSpec:
