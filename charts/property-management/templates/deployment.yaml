@@ -1,3 +1,4 @@
+{{- $sidecar := .Values.logging.sidecar }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -14,10 +15,25 @@ spec:
       labels:
         app: {{ .Release.Name }}
       annotations:
-        # restart pods when Terraform writes a new secret version (env from a Secret isn't reloaded)
-        secrets/version: {{ .Values.secrets.version | quote }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- if $sidecar.enabled }}
+        # restart pods when the Fluent Bit config changes
+        checksum/fluent-bit: {{ include (print $.Template.BasePath "/fluent-bit-configmap.yaml") . | sha256sum }}
+        {{- end }}
     spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- if $sidecar.enabled }}
+      volumes:
+        # app writes JSON log lines here, the Fluent Bit sidecar tails them
+        - name: app-logs
+          emptyDir:
+            sizeLimit: {{ $sidecar.logVolumeSize }}
+        - name: fluent-bit-config
+          configMap:
+            name: {{ .Release.Name }}-fluent-bit
+      {{- end }}
       containers:
         - name: app
           image: "{{ required "image.repository is required" .Values.image.repository }}:{{ required "image.tag is required" .Values.image.tag }}"
@@ -29,19 +45,31 @@ spec:
             - name: metrics
               containerPort: {{ .Values.ports.metrics }}
             {{- end }}
+            {{- if .Values.ports.extra }}
             - name: extra
               containerPort: {{ .Values.ports.extra }}
+            {{- end }}
+          {{- if $sidecar.enabled }}
+          env:
+            # where the app's mulog file publisher writes (read by the sidecar)
+            - name: LOG_FILE
+              value: "{{ $sidecar.logDir }}/{{ $sidecar.logFile }}"
+          {{- end }}
           {{- if .Values.secrets.enabled }}
           envFrom:
             # k8s Secret created by External Secrets Operator from AWS Secrets Manager
             - secretRef:
                 name: {{ .Release.Name }}-db
           {{- end }}
+          {{- if $sidecar.enabled }}
+          volumeMounts:
+            - name: app-logs
+              mountPath: {{ $sidecar.logDir }}
+          {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          # Switch to httpGet once you know a health endpoint (e.g. /health)
-          # Startup: give the JVM up to failureThreshold × periodSeconds to open the port.
-          # Liveness/readiness only start once this has succeeded.
+          # Startup: up to failureThreshold x periodSeconds for the JVM to open the port;
+          # liveness/readiness only start once this has succeeded
           startupProbe:
             tcpSocket:
               port: http
@@ -56,3 +84,40 @@ spec:
               port: http
             periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
             failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+
+        {{- if $sidecar.enabled }}
+        # Ships the app's log file to Loki
+        - name: fluent-bit
+          image: {{ $sidecar.image }}
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: APP_NAME
+              value: {{ .Release.Name }}
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: LOKI_HOST
+              value: {{ $sidecar.loki.host | quote }}
+            - name: LOKI_PORT
+              value: {{ $sidecar.loki.port | quote }}
+          ports:
+            - name: fluent-bit
+              containerPort: 2020
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: fluent-bit
+            periodSeconds: 30
+          volumeMounts:
+            - name: app-logs
+              mountPath: {{ $sidecar.logDir }}
+            - name: fluent-bit-config
+              mountPath: /fluent-bit/etc/
+          resources:
+            {{- toYaml $sidecar.resources | nindent 12 }}
+        {{- end }}

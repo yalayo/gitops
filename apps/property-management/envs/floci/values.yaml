@@ -48,3 +48,12 @@ secrets:
   awsSecretName: property-management/app
   version: "0.1.0"               # Secrets Manager version id; changes force a re-sync + pod restart
   refreshInterval: 1m
+
+# Ship logs to Loki via the Fluent Bit sidecar (app writes JSON lines to $LOG_FILE)
+logging:
+  sidecar:
+    enabled: true
+
+metrics:
+  serviceMonitor:
+    enabled: false

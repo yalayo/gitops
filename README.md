@@ -15,3 +15,14 @@ envs/floci/values.yaml        Values for the local Floci EKS cluster
 
 Change config (replicas, resources, probes, ingress) by committing here, not with kubectl/helm.
 Roll back by reverting the tag commit.
+
+## Layout
+
+```
+apps/<app>/envs/<env>/values.yaml   per-app, per-environment values (Jenkins updates the image tag here)
+charts/property-management/         shared app chart (optional Fluent Bit sidecar + ServiceMonitor)
+platform/<addon>/values.yaml        cluster add-ons deployed by Argo CD:
+                                      kube-prometheus-stack (Prometheus + Grafana), loki
+```
+
+Grafana: http://grafana.localhost:8080 (Explore -> Loki: `{app="property-management"} | json`).
