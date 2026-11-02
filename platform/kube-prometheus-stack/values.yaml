@@ -38,7 +38,7 @@ grafana:
 
 prometheus:
   prometheusSpec:
-    retention: 2d
+    retention: 5d
     # Pick up ServiceMonitors/PodMonitors/rules from every namespace, not only ones labelled for this release
     serviceMonitorSelectorNilUsesHelmValues: false
     podMonitorSelectorNilUsesHelmValues: false
