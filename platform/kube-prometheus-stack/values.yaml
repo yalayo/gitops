@@ -32,9 +32,9 @@ grafana:
   resources:
     requests:
       cpu: 250m
-      memory: 1Gi
+      memory: 2Gi
     limits:
-      memory: 1Gi                  # was 256Mi, too tight for Grafana 12
+      memory: 2Gi                  # was 256Mi, too tight for Grafana 12
 
 prometheus:
   prometheusSpec:
@@ -46,9 +46,9 @@ prometheus:
     resources:
       requests:
         cpu: 250m
-        memory: 1Gi
+        memory: 2Gi
       limits:
-        memory: 1Gi
+        memory: 2Gi
     # storageSpec omitted -> emptyDir (no default StorageClass in the Floci cluster)
 
 # Saves ~100 MiB; enable and configure receivers when you want notifications
